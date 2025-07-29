@@ -1,6 +1,17 @@
 import mongoose, { Schema, Document } from "mongoose";
 
-export interface IChargingStation extends Document {
+export interface StationFilterOptions {
+  connectorTypes?: string[];
+  chargingCurrents?: string[];
+  operators?: string[];
+  location?: {
+    longitude: number;
+    latitude: number;
+    radiusKm?: number;
+  };
+}
+
+export interface IChargingStation {
   cost?: string;
   charging_points?: number;
   pay_at_location?: string;
@@ -13,6 +24,10 @@ export interface IChargingStation extends Document {
   connection_type?: string;
   current_type?: string;
   charging_points_flag?: number;
+  location: {
+    type: string;
+    coordinates: [number, number]; // [latitude, longitude]
+  };
 }
 
 const ChargingStationSchema: Schema = new Schema<IChargingStation>(
@@ -29,6 +44,17 @@ const ChargingStationSchema: Schema = new Schema<IChargingStation>(
     connection_type: { type: String },
     current_type: { type: String },
     charging_points_flag: { type: Number },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        required: true,
+      },
+      coordinates: {
+        type: [Number], // [latitude, longitude]
+        required: true,
+      },
+    }
   },
   {
     timestamps: true, // Automatically add createdAt and updatedAt fields
@@ -36,7 +62,11 @@ const ChargingStationSchema: Schema = new Schema<IChargingStation>(
   }
 );
 
-const ChargingStation = mongoose.model<IChargingStation>(
+ChargingStationSchema.index({ location: '2dsphere' });
+
+export interface IChargingStationDocument extends IChargingStation, Document {}
+
+const ChargingStation = mongoose.model<IChargingStationDocument>(
   "ChargingStation",
   ChargingStationSchema,
   "charging_stations"
